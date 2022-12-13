@@ -391,6 +391,7 @@ void sendemail()//function which sends an email to the user to remind them to ta
 void sleep() {
 M5.Axp.DeepSleep(SLEEP_SEC(5)); //Wake up after 5 seconds of deep sleep, the CPU will reboot and the program will start from the beginning. 
 }
+//Main function for detection of heart attacks
 void heart_attack_detection()
 {
 int control_value{0};
@@ -400,6 +401,7 @@ double average1{0};
 int detection=0;
 double difference{-100};
  M5.begin();
+ //Connecting to the heart sensor
  Serial.begin(115200);
  Serial.print("Initializing pulse oximeter..");
  delay(3000);
@@ -416,6 +418,7 @@ double difference{-100};
  pox.setIRLedCurrent(MAX30100_LED_CURR_7_6MA);
  // Register a callback for the beat detection
  pox.setOnBeatDetectedCallback(onBeatDetected);
+ //Keeps running while time_control is equal to zero.For this specific program,we want it to run while heart attack not detected.
  while (time_control==0)
  {
  
@@ -433,28 +436,35 @@ double difference{-100};
  
  Serial.print(pox.getSpO2());
  Serial.println("%");
+ //Getting sum of all heart rates
  sum = sum + pox.getHeartRate();
+ //Incrementing counter by 1
  counter = counter +1;
+ //Checking if counter is equal to 15
  if (counter==15)
  {
  
  Serial.print(" The average is : ");
  average = sum/counter;
  Serial.print(average);
+  //initializing counter and sum to zero after calculating the averages
  counter = 0;
  sum =0;
  if (counter_consec==0) //if counter_consec is 1 ,this means average1 and average are storing the same value
  {
+ //keeping value of average in average 1.This will be used for later comparison next time conditions for comparison is required
  average1=average;
- //Serial.print("Hi");
+
  counter_consec=counter_consec+1; 
  }
  else
  {
  counter_consec=0;
  }
+ //Checking if two consecutive averages are lower than lower limit
  if ((counter_consec==0) && (average1<=lower_limit) && (average<=lower_limit))
  {
+ //If attack detected, the following piece of code is activated
  int ccounter(0);
  while (detection==0 || ccounter != 2)
  {
@@ -477,6 +487,7 @@ double difference{-100};
  }
  sleep();
  }
+ //Checking if upper_limit of heart attack has been reached and launching procedure when heart attack has been detected.
  if ((counter_consec==0) && (average1>=upper_limit) && (average>=upper_limit))
  {
  int ccounter = 0;
@@ -501,6 +512,7 @@ ccounter++;
  }
 
  }
+ //Printing out the information on the M5 Stack about heart rate and breath rate of user
  M5.lcd.clear();
  M5.Lcd.setCursor(10, 10);
  M5.Lcd.setTextColor(GREEN);
@@ -567,13 +579,15 @@ void connectwifi()
  M5.lcd.println(WiFi.localIP()); // The serial port outputs the IP address // of the M5Core. 
  M5.Lcd.clear(BLACK);
 }
+
+//Algorithm for stress relief 
 void relaxation_algorithm()
 {
 int control_value{0};
 int time_control{0};
 int counter_consec{0};
 double average1{0};
-
+//  Connecting to the heart sensor
  double difference{-100};
  Serial.begin(115200);
  Serial.print("Initializing pulse oximeter..");
@@ -590,6 +604,7 @@ double average1{0};
  pox.setIRLedCurrent(MAX30100_LED_CURR_7_6MA);
  // Register a callback for the beat detection
  pox.setOnBeatDetectedCallback(onBeatDetected);
+  //The loop will keep on running as long as time_control is zero.Time_control is actually controlled by a timer here
  while (time_control==0)
  {
  
@@ -609,6 +624,7 @@ double average1{0};
  Serial.println("%");
  sum = sum + pox.getHeartRate();
  counter = counter +1;
+  //Calculating averages after every 10 readings
  if (counter==10)
  {
  
@@ -618,16 +634,19 @@ double average1{0};
  counter = 0;
  sum =0;
  }
+ //If average is greater than 120,screen will flash red followed by black
  if (average>120)
  {
  M5.Lcd.clear(RED); 
  M5.Lcd.clear(BLACK);
  }
+ //if average is greater than 60,screen will flash yellow and black
  else if (average>60)
  {
  M5.Lcd.clear(YELLOW); 
  M5.Lcd.clear(BLACK);
  }
+ //if average is greater than 30,screen will flash green
  else if (average>30)
  {
  M5.Lcd.clear(GREEN); 
@@ -640,7 +659,9 @@ double average1{0};
  M5.Lcd.clear(BLACK);
  M5.Lcd.setCursor(10, 200);
  M5.Lcd.printf("Time: %02d : %02d : %02d/n",TimeStruct.Hours, TimeStruct.Minutes, TimeStruct.Seconds);
+ //Checking if timer is equal to 1 minute
  difference=TimeStruct.Seconds-59;
+ //If One minute has passed since the beginning of the practice,the device will print it's the end of the practice and reboot   
  if (difference==0)
  {
  M5.Lcd.clear(WHITE);
